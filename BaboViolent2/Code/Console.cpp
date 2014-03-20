@@ -641,7 +641,7 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 	// On fait un if sur toute les commandes possibles
 	if (command == "help" || command == "?")
 	{
-		add("help ? info admin - set quit host dedicate voteon novote");
+		add("help ? info admin - set quit host dedicate voteon novote veto");
 		add("playerlist maplist addmap removemap changemap connect");
 		add("disconnect sayall sayteam edit restart kick kickid");
 		add("banlist ban banid banip unban moveid allwatch");
@@ -2178,6 +2178,18 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 		if(scene->server) {
 			if(banID >= 0 && banID < scene->server->banList.size())
 				scene->unban(banID);
+		}
+		return;
+	}
+
+	if (command == "veto")
+	{
+		if (scene->server->game->voting.votingInProgress)
+		{
+			scene->server->game->voting.cancel();
+			net_svcl_vote_result voteResult;
+			voteResult.passed = false;
+			bb_serverSend((char*)(&voteResult), sizeof(net_svcl_vote_result), NET_SVCL_VOTE_RESULT);
 		}
 		return;
 	}
