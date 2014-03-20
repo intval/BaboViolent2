@@ -62,24 +62,26 @@ Server::Server(Game * pGame): maxTimeOverMaxPing(5.0f)//, maxIdleTime(180.0f)
 
 	// Load banlist
 	std::ifstream file("main/banlist", std::ios::binary);
-	char name[32], ip[16];
+	char name[32], ip[16], admin[32], reason[64], time[20];
 
 	while(file.is_open() && !file.eof())
 	{
 		file.read(name, sizeof(char)*32);
 		file.read(ip, sizeof(char)*16);
+		file.read(admin, sizeof(char)* 32);
+		file.read(reason, sizeof(char)* 64);
+		file.read(time, sizeof(char)* 20);
 
 		// Will not hit eof until after first read
 		if(file.eof()) break;
 
 		// Add to ban list
-		banList.push_back( std::pair<CString,CString>(name, ip) );
+		auto tuple = std::make_tuple(CString(name), CString(ip), CString(admin), CString(reason), CString(time));
+		banList.push_back(tuple);
 
 	}
 	//reportUploadURLs.push_back("http://localhost/index.php");
 }
-
-
 
 #include "CMaster.h"
 //
@@ -449,13 +451,14 @@ void Server::updateNet(float delay, bool send)
 		console->add(CString("\x3> A client has connected. Client ID : %i", clientID), true);
 
 		// Check against ban list
-		for(std::size_t i = 0; i < banList.size(); ++i)
+		for (size_t i = 0, L = banList.size(); i < L; ++i)
 		{
-			if(banList[i].second == IPDuGars)
+			auto bannedIp = std::get<1>(banList[i]);
+			if( bannedIp == IPDuGars)
 			{
 				bb_serverDisconnectClient(clientID);
 				console->add(CString("\x3> Disconnecting banned client, %s. IP: %s",
-								banList[i].first.s, banList[i].second.s), true);
+					std::get<0>(banList[i]).s, bannedIp.s), true);
 				return;
 			}
 		}

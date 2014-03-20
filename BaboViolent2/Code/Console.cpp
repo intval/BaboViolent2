@@ -2094,9 +2094,12 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 		{
 			for (int i=0;i<(int)scene->server->banList.size();++i)
 			{
-				add(CString("[%02i] %s \x8- %s", i,
-					scene->server->banList[i].first.s,
-					scene->server->banList[i].second.s), true);
+				add(CString("[%02i] %s \x8- %s %s %s %s", i,
+					std::get<0>(scene->server->banList[i]).s,
+					std::get<1>(scene->server->banList[i]).s,
+					std::get<2>(scene->server->banList[i]).s, 
+					std::get<3>(scene->server->banList[i]).s, 
+					std::get<4>(scene->server->banList[i]).s ), true);
 			}
 		}
 		return;
@@ -2105,24 +2108,66 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 	// Ban by name
 	if (command == "ban")
 	{
-		scene->ban(tokenize);
+		CString player = tokenize.getFirstToken(' ');
+		CString reason = tokenize;
+		reason.resize(64);
+
+		if (player.isNullOrEmpty() || reason.isNullOrEmpty())
+		{
+			add(CString("Usage: ban <player> <reason>"));
+			add(CString("Example: ban john spawn flame"));
+			return;
+		}
+
+		int playerId = FindPlayerIndexByPartialNickname(player);
+
+		if (playerId < 0)
+		{
+			add(CString("Could not find player with name like %s", player.s));
+			return;
+		}
+
+		add(CString("Banning %s for %s", scene->server->game->players[playerId]->name.s, reason.s));
+
+		CString current_player = getPlayersNameByBabobNetId(bbnetID);
+
+		scene->ban(playerId, reason, current_player);
 		return;
 	}
 
 	// Ban by IP
 	if (command == "banip")
 	{
-		scene->banIP(tokenize);
+		CString ip = tokenize.getFirstToken(' ');
+		CString reason = tokenize;
+		reason.resize(64);
+
+		if (ip.isNullOrEmpty() || reason.isNullOrEmpty())
+		{
+			add(CString("Usage: banip <ip> <reason>"));
+			add(CString("Example: banip 127.0.0.1 cheats and hacks"));
+			return;
+		}
+		
+		CString current_player = getPlayersNameByBabobNetId(bbnetID);
+
+		scene->banIP(ip, reason, current_player);
 		return;
 	}
 
 	// Ban by player ID
 	if (command == "banid")
 	{
-		int playerID = tokenize.toInt();
-		if (playerID >= 0 && playerID < MAX_PLAYER)
+		int playerID = tokenize.getFirstToken(' ').toInt();
+		CString reason = tokenize;
+		reason.resize(64);
+
+		
+		CString current_player = getPlayersNameByBabobNetId(bbnetID);
+
+		if (playerID >= 0 && playerID < MAX_PLAYER && scene->server->game->players[playerID])
 		{
-			scene->ban(playerID);
+			scene->ban(playerID, reason, current_player);
 		}
 		return;
 	}
@@ -2489,4 +2534,21 @@ void Console::movePlayerToTeam(int playerID, int teamID)
 	teamRequest.playerID = playerID;
 	teamRequest.teamRequested = teamID;
 	bb_serverSend((char*)&teamRequest, sizeof(net_clsv_svcl_team_request), NET_CLSV_SVCL_TEAM_REQUEST, 0);
+}
+
+
+CString Console::getPlayersNameByBabobNetId(unsigned long babonetID)
+{
+	if (babonetID < 0)
+		return CString("server console");
+
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		if (scene->server->game->players[i] && scene->server->game->players[i]->babonetID == babonetID)
+		{
+			return scene->server->game->players[i]->name;
+		}
+	}
+
+	return CString("unknown");
 }

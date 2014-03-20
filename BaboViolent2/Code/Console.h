@@ -34,6 +34,7 @@
 #ifndef CONSOLE
 #define CONSOLE_MAX_RECOGNITION_VAR 10
 #endif
+#include <Player.h>
 
 
 class Console
@@ -144,6 +145,7 @@ public:
 
 private:
 	const std::vector<CString>& GetActiveMessages();
+	CString Console::getPlayersNameByBabobNetId(unsigned long babonetID);
 };
 
 

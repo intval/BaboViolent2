@@ -85,8 +85,8 @@ public:
 	//A list of all maps + their sizes;
 	std::vector<mapInfo> mapInfoList;
 
-	// Ban list, name & IP
-	std::vector< std::pair<CString,CString> > banList;
+	// Ban list, nickname, IP, adminName, reason, date
+	std::vector< std::tuple<CString, CString, CString, CString, CString> > banList;
 
 	// 50 Cached players in ram only , so we can ban them eventually
 	int			 CachedIndex; // what index are we going to use for next client
