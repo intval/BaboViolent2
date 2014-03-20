@@ -644,7 +644,9 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 		add("help ? info admin - set quit host dedicate voteon novote");
 		add("playerlist maplist addmap removemap changemap connect");
 		add("disconnect sayall sayteam edit restart kick kickid");
-		add("banlist ban banid banip unban move moveid allwatch");
+		add("banlist ban banid banip unban moveid allwatch");
+		add("swap playerName1 playerName2");
+		add("move playerName teamName");
 		return;
 	}
 
@@ -1017,43 +1019,121 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 	// Put player on a specified team
 	if (command == "move")
 	{
-		if (scene->server)
+		if (!scene->server)
+			return;
+
+		if (!scene->server->game)
+			return;
+			
+		CString playerNameInput = tokenize.getFirstToken(' ');
+		CString teamName = tokenize.getNextToken(' ');
+		teamName.toLower();
+
+		if (
+			playerNameInput.isNullOrEmpty() 
+			|| teamName.isNullOrEmpty() 
+			|| (teamName != "red" && teamName != "blue" && teamName != "spec")
+		)
 		{
-			if (scene->server->game)
-			{
-				int teamID = tokenize.getFirstToken(' ').toInt();
-				int playerID = -1;
-				if ((teamID < -1) || (teamID > 1))
-				{
-					add(CString("Error: team ID must be one of the following:\n    -1 for spectator, 0 for blue or 1 for red."), true);
-				}
-				else
-				{
-					for (int i = 0; i < MAX_PLAYER; ++i)
-					{
-						if(scene->server->game->players[i] && (textColorLess(tokenize) == textColorLess(scene->server->game->players[i]->name)))
-						{
-							playerID = i;
-							break;
-						}
-					}
-					if (playerID == -1)
-					{
-						add(CString("Error: No players were found with given name"), true);
-					}
-					else
-					{
-						scene->server->game->assignPlayerTeam(playerID, teamID, 0);
-						net_clsv_svcl_team_request teamRequest;
-						teamRequest.playerID = playerID;
-						teamRequest.teamRequested = teamID;
-						bb_serverSend((char*)&teamRequest, sizeof(net_clsv_svcl_team_request), NET_CLSV_SVCL_TEAM_REQUEST, 0);
-					}
-				}
-			}
+			add(CString("Usage: move <playerName> <teamName>"), true);
+			add(CString("Example: move john spec"), true);
+			add(CString("Example: move john red"), true);
+			add(CString("Example: move john blue"), true);
+			return;
 		}
+			
+		int playerId = FindPlayerIndexByPartialNickname(playerNameInput);
+
+		if (playerId < 0)
+		{
+			add(CString("Could not find player %s", playerNameInput.s), true);
+			return;
+		}
+
+		int newTeamId, currentTeamId;
+
+		if (teamName == "red")
+			newTeamId = 1;
+		else if (teamName == "blue")
+			newTeamId = 0;
+		else if (teamName == "spec")
+			newTeamId = -1;
+
+		
+		currentTeamId = scene->server->game->players[playerId]->teamID;
+
+		if (currentTeamId == newTeamId)
+		{
+			add(CString("Player %s is already on %s team", scene->server->game->players[playerId]->name.s, teamName.s), true);
+			return;
+		}
+
+		movePlayerToTeam(playerId, newTeamId);
+		add(CString("Moved %s to %s team", scene->server->game->players[playerId]->name.s, teamName.s), true);
+		return;
+		
+	}
+
+	// swap to players teams
+	if (command == "swap")
+	{
+		if (!scene->server)
+			return;
+
+		if (!scene->server->game)
+			return;
+
+		if (!scene->server->game->players)
+			return;
+
+		CString player1InputName = tokenize.getFirstToken(' ');
+		CString player2InputName = tokenize.getNextToken(' ');
+
+		if (player1InputName.isNullOrEmpty() || player2InputName.isNullOrEmpty())
+		{
+			add(CString("Usage:  swap <player1> <player2>"), true);
+			add(CString("Example:  swap john james"), true);
+			return;
+		}
+
+		int player1 = FindPlayerIndexByPartialNickname(player1InputName);
+		int player2 = FindPlayerIndexByPartialNickname(player2InputName);
+
+		if (player1 < 0)
+		{
+			add(CString("Could not find player %s", player1InputName.s), true);
+			return;
+		}
+
+		if (player2 < 0)
+		{
+			add(CString("Could not find player %s", player2InputName.s), true);
+			return;
+		}
+
+		add(CString("swapping %02i with %02i ", player1, player2));
+			
+		int player1TeamId = scene->server->game->players[player1]->teamID;
+		int player2TeamId = scene->server->game->players[player2]->teamID;
+		
+		CString player1Nickname = textColorLess(scene->server->game->players[player1]->name);
+		CString player2Nickname = textColorLess(scene->server->game->players[player2]->name);
+
+
+		if (player1TeamId == player2TeamId)
+		{
+			add(CString("%s and %s are on the same team", player1Nickname.s, player2Nickname.s));
+		}
+		else
+		{
+			movePlayerToTeam(player1, player2TeamId);
+			movePlayerToTeam(player2, player1TeamId);
+			add(CString("Swapped %s with %s", player1Nickname.s, player2Nickname.s), true);
+		}
+
 		return;
 	}
+
 
 	// Put player on a specified team
 	if (command == "moveid")
@@ -1081,24 +1161,7 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 						{
 							if( scene->server->game->players[i] )
 							{
-								if(scene->server->game->map->flagState[0] == scene->server->game->players[i]->playerID)
-								{
-									scene->server->game->map->flagState[0] = -1; // Le server va nous communiquer la position du flag exacte
-									scene->server->game->map->flagPos[0] =  scene->server->game->players[i]->currentCF.position;
-									scene->server->game->map->flagPos[0][2] = 0;
-								}
-								if(scene->server->game->map->flagState[1] == scene->server->game->players[i]->playerID)
-								{
-									scene->server->game->map->flagState[1] = -1; // Le server va nous communiquer la position du flag exacte
-									scene->server->game->map->flagPos[1] =  scene->server->game->players[i]->currentCF.position;
-									scene->server->game->map->flagPos[1][2] = 0;
-								}
-								scene->server->game->players[i]->currentCF.position.set(-999,-999,0);
-								scene->server->game->assignPlayerTeam(i, teamID, 0);
-								net_clsv_svcl_team_request teamRequest;
-								teamRequest.playerID = i;
-								teamRequest.teamRequested = teamID;
-								bb_serverSend((char*)&teamRequest, sizeof(net_clsv_svcl_team_request), NET_CLSV_SVCL_TEAM_REQUEST, 0);
+								movePlayerToTeam(i, teamID);
 							}
 						}
 					}
@@ -1107,25 +1170,8 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 						// move only the specified player
 						if( scene->server->game->players[playerID] )
 						{
-							if(scene->server->game->map->flagState[0] == scene->server->game->players[playerID]->playerID)
-							{
-								scene->server->game->map->flagState[0] = -1; // Le server va nous communiquer la position du flag exacte
-								scene->server->game->map->flagPos[0] =  scene->server->game->players[playerID]->currentCF.position;
-								scene->server->game->map->flagPos[0][2] = 0;
-							}
-							if(scene->server->game->map->flagState[1] == scene->server->game->players[playerID]->playerID)
-							{
-								scene->server->game->map->flagState[1] = -1; // Le server va nous communiquer la position du flag exacte
-								scene->server->game->map->flagPos[1] =  scene->server->game->players[playerID]->currentCF.position;
-								scene->server->game->map->flagPos[1][2] = 0;
-							}
-							scene->server->game->players[playerID]->currentCF.position.set(-999,-999,0);
+							movePlayerToTeam(playerID, teamID);
 						}
-						scene->server->game->assignPlayerTeam(playerID, teamID, 0);
-						net_clsv_svcl_team_request teamRequest;
-						teamRequest.playerID = playerID;
-						teamRequest.teamRequested = teamID;
-						bb_serverSend((char*)&teamRequest, sizeof(net_clsv_svcl_team_request), NET_CLSV_SVCL_TEAM_REQUEST, 0);
 					}
 				}
 			}
@@ -2391,3 +2437,56 @@ const std::vector<CString>& Console::GetActiveMessages()
 		return m_chatMessages;
 }
 
+int Console::FindPlayerIndexByPartialNickname(CString partOfName)
+{
+	CString partOfNameNormalized = textColorLess(partOfName);
+	partOfNameNormalized.toLower();
+
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		if (!scene->server->game->players[i])
+			continue;
+
+		CString player = textColorLess(scene->server->game->players[i]->name);
+		player.toLower();
+
+		if (player.find(partOfNameNormalized))
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+
+void Console::movePlayerToTeam(int playerID, int teamID)
+{
+	if (!scene->server->game->players[playerID])
+		return;
+
+	if (scene->server->game->players[playerID]->teamID == teamID)
+		return;
+	
+	if (scene->server->game->map->flagState[0] == scene->server->game->players[playerID]->playerID)
+	{
+		scene->server->game->map->flagState[0] = -1; // Le server va nous communiquer la position du flag exacte
+		scene->server->game->map->flagPos[0] = scene->server->game->players[playerID]->currentCF.position;
+		scene->server->game->map->flagPos[0][2] = 0;
+	}
+
+	if (scene->server->game->map->flagState[1] == scene->server->game->players[playerID]->playerID)
+	{
+		scene->server->game->map->flagState[1] = -1; // Le server va nous communiquer la position du flag exacte
+		scene->server->game->map->flagPos[1] = scene->server->game->players[playerID]->currentCF.position;
+		scene->server->game->map->flagPos[1][2] = 0;
+	}
+	scene->server->game->players[playerID]->currentCF.position.set(-999, -999, 0);
+	
+
+	scene->server->game->assignPlayerTeam(playerID, teamID, 0);
+	net_clsv_svcl_team_request teamRequest;
+	teamRequest.playerID = playerID;
+	teamRequest.teamRequested = teamID;
+	bb_serverSend((char*)&teamRequest, sizeof(net_clsv_svcl_team_request), NET_CLSV_SVCL_TEAM_REQUEST, 0);
+}

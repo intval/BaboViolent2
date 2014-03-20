@@ -116,6 +116,10 @@ public:
 
 	// Pour initialiser la console
 	void init();
+
+	// Moves a player to a certain team
+	void movePlayerToTeam(int playerID, int teamID);
+
 #ifndef CONSOLE
 	// Pour savoir si la console est active ou non, si cest le cas, on block les inputs ailleur
 	bool isActive() {return m_isActive;}
@@ -135,6 +139,8 @@ public:
 #endif
 
 	void SetDisplayEvents(bool b);
+
+	int Console::FindPlayerIndexByPartialNickname(CString partOfName);
 
 private:
 	const std::vector<CString>& GetActiveMessages();
