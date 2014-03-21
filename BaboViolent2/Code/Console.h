@@ -146,6 +146,7 @@ public:
 private:
 	const std::vector<CString>& GetActiveMessages();
 	CString Console::getPlayersNameByBabobNetId(unsigned long babonetID);
+	void Console::sendConsoleMessageToPlayers(CString message, unsigned long bbnetID = 0); // bbnetID = 0 means all clients
 };
 
 

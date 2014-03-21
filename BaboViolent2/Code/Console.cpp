@@ -1035,10 +1035,10 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 			|| (teamName != "red" && teamName != "blue" && teamName != "spec")
 		)
 		{
-			add(CString("Usage: move <playerName> <teamName>"), true);
-			add(CString("Example: move john spec"), true);
-			add(CString("Example: move john red"), true);
-			add(CString("Example: move john blue"), true);
+			sendConsoleMessageToPlayers(CString("Usage: move <playerName> <teamName>"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: move john spec"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: move john red"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: move john blue"), bbnetID);
 			return;
 		}
 			
@@ -1046,7 +1046,7 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (playerId < 0)
 		{
-			add(CString("Could not find player %s", playerNameInput.s), true);
+			sendConsoleMessageToPlayers(CString("Could not find player %s", playerNameInput.s), bbnetID);
 			return;
 		}
 
@@ -1064,12 +1064,12 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (currentTeamId == newTeamId)
 		{
-			add(CString("Player %s is already on %s team", scene->server->game->players[playerId]->name.s, teamName.s), true);
+			sendConsoleMessageToPlayers(CString("Player %s is already on %s team", scene->server->game->players[playerId]->name.s, teamName.s), bbnetID);
 			return;
 		}
 
 		movePlayerToTeam(playerId, newTeamId);
-		add(CString("Moved %s to %s team", scene->server->game->players[playerId]->name.s, teamName.s), true);
+		sendConsoleMessageToPlayers(CString("Moved %s to %s team", scene->server->game->players[playerId]->name.s, teamName.s), bbnetID);
 		return;
 		
 	}
@@ -1091,8 +1091,8 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (player1InputName.isNullOrEmpty() || player2InputName.isNullOrEmpty())
 		{
-			add(CString("Usage:  swap <player1> <player2>"), true);
-			add(CString("Example:  swap john james"), true);
+			sendConsoleMessageToPlayers(CString("Usage:  swap <player1> <player2>"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example:  swap john james"), bbnetID);
 			return;
 		}
 
@@ -1101,17 +1101,17 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (player1 < 0)
 		{
-			add(CString("Could not find player %s", player1InputName.s), true);
+			sendConsoleMessageToPlayers(CString("Could not find player %s", player1InputName.s), bbnetID);
 			return;
 		}
 
 		if (player2 < 0)
 		{
-			add(CString("Could not find player %s", player2InputName.s), true);
+			sendConsoleMessageToPlayers(CString("Could not find player %s", player2InputName.s), bbnetID);
 			return;
 		}
 
-		add(CString("swapping %02i with %02i ", player1, player2));
+		sendConsoleMessageToPlayers(CString("swapping %02i with %02i ", player1, player2), bbnetID);
 			
 		int player1TeamId = scene->server->game->players[player1]->teamID;
 		int player2TeamId = scene->server->game->players[player2]->teamID;
@@ -1122,13 +1122,13 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (player1TeamId == player2TeamId)
 		{
-			add(CString("%s and %s are on the same team", player1Nickname.s, player2Nickname.s));
+			sendConsoleMessageToPlayers(CString("%s and %s are on the same team", player1Nickname.s, player2Nickname.s), bbnetID);
 		}
 		else
 		{
 			movePlayerToTeam(player1, player2TeamId);
 			movePlayerToTeam(player2, player1TeamId);
-			add(CString("Swapped %s with %s", player1Nickname.s, player2Nickname.s), true);
+			sendConsoleMessageToPlayers(CString("Swapped %s with %s", player1Nickname.s, player2Nickname.s), bbnetID);
 		}
 
 		return;
@@ -2114,8 +2114,8 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (player.isNullOrEmpty() || reason.isNullOrEmpty())
 		{
-			add(CString("Usage: ban <player> <reason>"));
-			add(CString("Example: ban john spawn flame"));
+			sendConsoleMessageToPlayers(CString("Usage: ban <player> <reason>"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: ban john spawn flame"), bbnetID);
 			return;
 		}
 
@@ -2123,13 +2123,15 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (playerId < 0)
 		{
-			add(CString("Could not find player with name like %s", player.s));
+			sendConsoleMessageToPlayers(CString("Could not find player with name like %s", player.s), bbnetID);
 			return;
 		}
 
-		add(CString("Banning %s for %s", scene->server->game->players[playerId]->name.s, reason.s));
+		sendConsoleMessageToPlayers(CString("Banning %s for %s", scene->server->game->players[playerId]->name.s, reason.s), bbnetID);
 
 		CString current_player = getPlayersNameByBabobNetId(bbnetID);
+
+		sendConsoleMessageToPlayers(CString("You were banned for: %s", reason.s), scene->server->game->players[playerId]->babonetID);
 
 		scene->ban(playerId, reason, current_player);
 		return;
@@ -2144,8 +2146,8 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 
 		if (ip.isNullOrEmpty() || reason.isNullOrEmpty())
 		{
-			add(CString("Usage: banip <ip> <reason>"));
-			add(CString("Example: banip 127.0.0.1 cheats and hacks"));
+			sendConsoleMessageToPlayers(CString("Usage: banip <ip> <reason>"), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: banip 127.0.0.1 cheats and hacks"), bbnetID);
 			return;
 		}
 		
@@ -2563,4 +2565,10 @@ CString Console::getPlayersNameByBabobNetId(unsigned long babonetID)
 	}
 
 	return CString("unknown");
+}
+
+void Console::sendConsoleMessageToPlayers(CString message, unsigned long bbnetId)
+{
+	add(message);
+	bb_serverSend(message.s, message.len() + 1, NET_SVCL_CONSOLE, bbnetId);
 }
