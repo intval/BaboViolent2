@@ -39,6 +39,21 @@ using std::min;
 //
 void Server::recvPacket(char * buffer, int typeID, unsigned long bbnetID)
 {
+
+	// find the player id from bbnet id
+	int broadcastingPlayerId = -1;
+	for (int i = 0; i<MAX_PLAYER; ++i)
+	{
+		if (game->players[i])
+		{
+			if (game->players[i]->babonetID == bbnetID)
+			{
+				broadcastingPlayerId = i;
+				break;
+			}
+		}
+	}
+
     int i;
 	switch (typeID)
 	{
@@ -602,27 +617,39 @@ void Server::recvPacket(char * buffer, int typeID, unsigned long bbnetID)
 				}
 			}
 
-			// broadcast to potential remote admins
+			
 			CString chatString = chat.message;
 			chatString = textColorLess( chatString );
+
+			// broadcast to potential remote admins
 			if( master )
 			{
-				// find the player id from bbnet id
-				int playerid = -1;
-				for (int i=0;i<MAX_PLAYER;++i)
-				{
-					if (game->players[i])
-					{
-						if (game->players[i]->babonetID == bbnetID )
-						{
-							playerid = i;
-							break;
-						}
-					}
-				}
-				master->RA_Chat( chatString.s, playerid );
+				master->RA_Chat( chatString.s, broadcastingPlayerId );
 			}
 		
+			// handle chat messages starting with ! as commands from admins
+			if (broadcastingPlayerId >= 0 && game->players[broadcastingPlayerId]->isAdmin)
+			{
+
+				// Message looks like    (spectator)Sasha : blabla
+				// Strip team and player name to get the content:
+				CString broadcastingPlayerName = textColorLess(game->players[broadcastingPlayerId]->name);
+				
+				int startOfTextIndex = -1;
+				chatString.find(CString("%s : ", broadcastingPlayerName.s), startOfTextIndex);
+
+				if (startOfTextIndex >= 0)
+					startOfTextIndex += 3 + broadcastingPlayerName.len();
+
+				chatString.resizeInverse(chatString.len() - startOfTextIndex);
+
+				if (chatString[0] == '!')
+				{
+					chatString.remove(0);
+					console->sendCommand(chatString, true, broadcastingPlayerId);
+				}
+			}
+
 			break;
 		}
 	case NET_CLSV_SVCL_TEAM_REQUEST:
