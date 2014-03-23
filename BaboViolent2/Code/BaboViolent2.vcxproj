@@ -124,13 +124,13 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../Bin/Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='ConsoleProDebug|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='ConsoleProDebug|Win32'">../Content</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='ConsoleProDebug|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ConsoleProDebug|Win32'">true</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='ConsoleRelease|Win32'">$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='ConsoleRelease|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ConsoleRelease|Win32'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='ProDebug|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='ProDebug|Win32'">../Content/</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='ProDebug|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ProDebug|Win32'">true</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='ProRelease|Win32'">$(Configuration)\</OutDir>
@@ -171,6 +171,12 @@
     <ReferencePath>C:\Program Files %28x86%29\FMOD SoundSystem\fmodapi375win\api\lib;$(ReferencePath)</ReferencePath>
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\FMOD SoundSystem\fmodapi375win\api\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>bv2Dedicated</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ProDebug|Win32'">
+    <TargetName>bv2p</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ConsoleProDebug|Win32'">
     <TargetName>bv2Dedicated</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -236,7 +242,7 @@
     <ClCompile>
       <AdditionalOptions>/D "RELEASE" %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../inc;../Bv2RemoteAdmin/inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\FMOD SoundSystem\fmodapi375win\api\inc;../inc;../Bv2RemoteAdmin/inc;%(AdditionalIncludeDirectories);.</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;CONSOLE;_PRO_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -250,7 +256,7 @@
     <Link>
       <AdditionalDependencies>sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>../Content/bv2Dedicated.exe</OutputFile>
-      <AdditionalLibraryDirectories>../lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\FMOD SoundSystem\fmodapi375win\api\lib;../lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
