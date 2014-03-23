@@ -1135,6 +1135,65 @@ void Console::sendCommand(CString commandLine, bool isAdmin, unsigned long bbnet
 	}
 
 
+
+	if (command == "addAdmin" || command == "addadmin")
+	{
+
+		int ladderId = tokenize.getFirstToken(' ').toInt();
+
+		if (ladderId < 0)
+		{
+			sendConsoleMessageToPlayers(CString("Usage: addAdmin <ladderId>", ladderId), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: addAdmin 2   will make Sasha an admin (as he has ladder id 2)"), bbnetID);
+			sendConsoleMessageToPlayers(CString("You can get ladder id from '- playerlist' command"), bbnetID);
+			return;
+		}
+
+
+		sendConsoleMessageToPlayers(CString("Adding player with ladder Id %d to servers admin list", ladderId), bbnetID);
+
+		if (scene->server)
+		{
+			scene->server->addAdmin(ladderId, CString("me"));
+		}
+		return;
+	}
+
+	if (command == "removeAdmin" || command == "removeadmin")
+	{
+		int ladderId = tokenize.getFirstToken(' ').toInt();
+
+		if (ladderId < 0)
+		{
+			sendConsoleMessageToPlayers(CString("Usage: removeAdmin <ladderId>", ladderId), bbnetID);
+			sendConsoleMessageToPlayers(CString("Example: removeAdmin 2   will remove Sasha from admins on this server (as he has ladder id 2)"), bbnetID);
+			sendConsoleMessageToPlayers(CString("You can get ladder id from '- playerlist' or '- admins' commands"), bbnetID);
+			return;
+		}
+
+		if (scene->server)
+		{
+			scene->server->removeAdmin(ladderId);
+		}
+		return;
+	}
+
+	if (command == "admins")
+	{
+		if (scene->server)
+		{
+			for (int i = 0, L = scene->server->adminList.size(); i < L; i++)
+			{
+				auto admin = & scene->server->adminList[i];
+				sendConsoleMessageToPlayers(CString("(%d) %s, recently seen as %s", admin->ladderId, admin->ladderAccountName.s, admin->playingName.s), bbnetID);
+			}
+		}
+		return;
+	}
+
+
+
+
 	// Put player on a specified team
 	if (command == "moveid")
 	{

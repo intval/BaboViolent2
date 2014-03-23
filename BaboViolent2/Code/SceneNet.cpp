@@ -310,6 +310,9 @@ void Scene::unban(int banID)
 	}
 }
 
+
+
+
 void Scene::addToBanList(CString playerName, CString playerIP, CString reason, CString adminName)
 {
 	if (!server)

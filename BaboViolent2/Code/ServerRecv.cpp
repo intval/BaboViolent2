@@ -459,6 +459,7 @@ void Server::recvPacket(char * buffer, int typeID, unsigned long bbnetID)
 			{
 				playerInfo.playerName[31] = '\0';
 				game->players[playerInfo.playerID]->name = playerInfo.playerName;
+				game->players[playerInfo.playerID]->ladderName = playerInfo.username;
 				memcpy(playerInfo.playerIP,game->players[playerInfo.playerID]->playerIP, 16);
 				bb_serverSend((char*)&playerInfo, sizeof(net_clsv_svcl_player_info), NET_CLSV_SVCL_PLAYER_INFO, 0);
 #ifndef CONSOLE
